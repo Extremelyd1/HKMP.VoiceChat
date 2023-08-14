@@ -2,9 +2,11 @@
     <Import Project="LocalBuildProperties.props" />
     <PropertyGroup>
         <ProjectGuid>{0B95F3A6-6628-4FF5-8574-3CC58419572D}</ProjectGuid>
-        <RootNamespace>HkmpProximityChat</RootNamespace>
-        <AssemblyName>HKMPProximityChat</AssemblyName>
+        <RootNamespace>HkmpVoiceChat</RootNamespace>
+        <AssemblyName>HKMPVoiceChat</AssemblyName>
         <TargetFramework>net472</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,12 +23,14 @@
             <Private>False</Private>
         </Reference>
         <Reference Include="UnityEngine.CoreModule">
-          <HintPath>$(References)\UnityEngine.CoreModule.dll</HintPath>
+            <HintPath>$(References)\UnityEngine.CoreModule.dll</HintPath>
+            <Private>False</Private>
         </Reference>
         <Reference Include="UnityEngine.InputLegacyModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>$(References)\UnityEngine.InputLegacyModule.dll</HintPath>
             <Private>False</Private>
         </Reference>
+        <PackageReference Include="OpenTK" Version="3.3.3" />
     </ItemGroup>
 
     <ItemGroup>
