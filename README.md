@@ -1,12 +1,12 @@
 # HKMP Voice Chat
-An HKMP addon that implements voice chat between players.
+A mod and HKMP addon that implements voice chat between players.
 
 ## How it works
 TODO
 
 ## Install
-The addon can be installed by dropping the `HKMPVoiceChat.dll` (which can be found on the
-[releases page](https://github.com/Extremelyd1/HKMP.VoiceChat/releases)) in the `HKMP` folder in your mods folder.
+TODO
+The mod can be installed by copying the contents of the target folder to the `HKMP.VoiceChat` folder in your mods folder.
 The mods folder can be found in your steam installation (Beware that these are the default locations.
 Your install may be in a different location):
 - **Windows**: `C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\Mods\HKMP`
