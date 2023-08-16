@@ -39,10 +39,13 @@ public class ServerVoicePacket : IPacketData {
 
 public class ClientVoicePacket : ServerVoicePacket {
     public ushort Id { get; set; }
+    
+    public bool Proximity { get; set; }
 
     /// <inheritdoc />
     public override void WriteData(IPacket packet) {
         packet.Write(Id);
+        packet.Write(Proximity);
         
         base.WriteData(packet);
     }
@@ -50,6 +53,7 @@ public class ClientVoicePacket : ServerVoicePacket {
     /// <inheritdoc />
     public override void ReadData(IPacket packet) {
         Id = packet.ReadUShort();
+        Proximity = packet.ReadBool();
         
         base.ReadData(packet);
     }

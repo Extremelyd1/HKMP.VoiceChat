@@ -23,7 +23,7 @@ public class ServerNetManager {
         });
     }
 
-    public void SendVoiceData(ushort receiver, ushort sender, byte[] data) {
+    public void SendVoiceData(ushort receiver, ushort sender, byte[] data, bool proximity) {
         if (data.Length > ServerVoicePacket.MaxSize) {
             ServerVoiceChat.Logger.Info("Voice data exceeds max size!");
             return;
@@ -31,6 +31,7 @@ public class ServerNetManager {
         
         _netSender.SendCollectionData(ClientPacketId.Voice, new ClientVoicePacket {
             Id = sender,
+            Proximity = proximity,
             VoiceData = data
         }, receiver);
     }

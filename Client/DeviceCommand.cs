@@ -7,12 +7,12 @@ using HkmpVoiceChat.Client.Voice;
 
 namespace HkmpVoiceChat.Client; 
 
-public class VoiceChatCommand : IClientCommand {
+public class DeviceCommand : IClientCommand {
     /// <inheritdoc />
-    public string Trigger => "/voicechat";
+    public string Trigger => "/device";
 
     /// <inheritdoc />
-    public string[] Aliases => new[] { "/vc", "/voice" };
+    public string[] Aliases => new[] { "/devices" };
 
     public event Action<string> SetMicrophoneEvent;
     public event Action<string> SetSpeakerEvent;
@@ -22,7 +22,7 @@ public class VoiceChatCommand : IClientCommand {
     private readonly Dictionary<int, string> _microphoneNames;
     private readonly Dictionary<int, string> _speakerNames;
 
-    public VoiceChatCommand(IChatBox chatBox) {
+    public DeviceCommand(IChatBox chatBox) {
         _chatBox = chatBox;
         _microphoneNames = new Dictionary<int, string>();
         _speakerNames = new Dictionary<int, string>();
