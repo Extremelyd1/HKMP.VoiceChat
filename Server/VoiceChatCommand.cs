@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Reflection;
+using Hkmp.Api.Command;
 using Hkmp.Api.Command.Server;
 
 namespace HkmpVoiceChat.Server;
@@ -15,14 +17,17 @@ public class VoiceChatCommand : IServerCommand {
 
     private readonly ServerSettings _settings;
 
-    public VoiceChatCommand(ServerSettings settings) {
+    private readonly HashSet<ushort> _broadcasters;
+
+    public VoiceChatCommand(ServerSettings settings, HashSet<ushort> broadcasters) {
         _settings = settings;
+        _broadcasters = broadcasters;
     }
 
     /// <inheritdoc />
     public void Execute(ICommandSender commandSender, string[] args) {
         void SendUsage() {
-            commandSender.SendMessage($"Invalid usage: {Trigger} <set>");
+            commandSender.SendMessage($"Invalid usage: {Trigger} <set|broadcast>");
         }
 
         if (args.Length < 2) {
@@ -33,6 +38,8 @@ public class VoiceChatCommand : IServerCommand {
         var action = args[1];
         if (action == "set") {
             HandleSet(commandSender, args);
+        } else if (action == "broadcast") {
+            HandleBroadcast(commandSender, args);
         } else {
             SendUsage();
         }
@@ -110,5 +117,23 @@ public class VoiceChatCommand : IServerCommand {
         commandSender.SendMessage($"Changed setting '{settingName}' to: {newValueObject}");
 
         _settings.SaveToFile();
+    }
+
+    private void HandleBroadcast(ICommandSender commandSender, string[] args) {
+        if (commandSender is not IPlayerCommandSender player) {
+            commandSender.SendMessage("Cannot execute this command as a non-player");
+            return;
+        }
+
+        var id = player.Id;
+        if (_broadcasters.Contains(id)) {
+            _broadcasters.Remove(id);
+            
+            player.SendMessage("You are no longer broadcasting your voice");
+        } else {
+            _broadcasters.Add(id);
+            
+            player.SendMessage("You are now broadcasting your voice");
+        }
     }
 }

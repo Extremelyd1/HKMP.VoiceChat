@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Hkmp.Api.Server;
 using Hkmp.Logging;
 
@@ -10,6 +11,8 @@ public class ServerVoiceChat {
     private readonly ServerNetManager _netManager;
     private readonly ServerSettings _settings;
 
+    private readonly HashSet<ushort> _broadcasters;
+
     public ServerVoiceChat(ServerAddon addon, IServerApi serverApi, ILogger logger) {
         Logger = logger;
 
@@ -17,10 +20,12 @@ public class ServerVoiceChat {
         _netManager = new ServerNetManager(addon, serverApi.NetServer);
 
         _settings = ServerSettings.LoadFromFile();
+
+        _broadcasters = new HashSet<ushort>();
     }
 
     public void Initialize() {
-        _serverApi.CommandManager.RegisterCommand(new VoiceChatCommand(_settings));
+        _serverApi.CommandManager.RegisterCommand(new VoiceChatCommand(_settings, _broadcasters));
 
         _netManager.VoiceEvent += OnVoice;
     }
@@ -35,6 +40,11 @@ public class ServerVoiceChat {
 
         foreach (var receiver in _serverApi.ServerManager.Players) {
             if (sender == receiver) {
+                continue;
+            }
+
+            if (_broadcasters.Contains(sender.Id)) {
+                _netManager.SendVoiceData(receiver.Id, sender.Id, data, false);
                 continue;
             }
 
