@@ -9,7 +9,7 @@ using ServerPacketId = HkmpVoiceChat.Common.Net.ServerPacketId;
 namespace HkmpVoiceChat.Client;
 
 public class ClientNetManager {
-    public event Action<ushort, byte[]> VoiceEvent;
+    public event Action<ushort, byte[], bool> VoiceEvent;
 
     private readonly IClientAddonNetworkSender<ServerPacketId> _netSender;
 
@@ -19,7 +19,7 @@ public class ClientNetManager {
         var netReceiver = netClient.GetNetworkReceiver<ClientPacketId>(addon, InstantiatePacket);
 
         netReceiver.RegisterPacketHandler<ClientVoicePacket>(ClientPacketId.Voice,
-            packet => { VoiceEvent?.Invoke(packet.Id, packet.VoiceData); });
+            packet => { VoiceEvent?.Invoke(packet.Id, packet.VoiceData, packet.Proximity); });
     }
 
     public void SendVoiceData(byte[] data) {

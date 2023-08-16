@@ -59,6 +59,10 @@ public class ServerVoiceChat {
                 continue;
             }
 
+            if (sender.CurrentScene != receiver.CurrentScene) {
+                continue;
+            }
+
             _netManager.SendVoiceData(receiver.Id, sender.Id, data, _settings.ProximityBasedVolume);
         }
     }

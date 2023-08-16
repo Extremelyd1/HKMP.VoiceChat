@@ -48,11 +48,9 @@ public class Speaker {
     }
 
     private void Write(short[] data, float volume, Vector3 position, float maxDistance) {
-        if (position != null) {
-            SetPosition(position, maxDistance);
-        }
+        SetPosition(position, maxDistance);
 
-        AL.Source(_source, ALSourcef.MaxGain, 1f);
+        AL.Source(_source, ALSourcef.MaxGain, 6f);
         SoundManager.CheckAlError(0);
         AL.Source(_source, ALSourcef.Gain, volume);
         SoundManager.CheckAlError(1);

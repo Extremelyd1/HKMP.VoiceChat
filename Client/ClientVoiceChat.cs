@@ -84,7 +84,7 @@ public class ClientVoiceChat {
         _soundManager.TryRemoveSpeaker(player.Id);
     }
 
-    private void OnVoiceReceived(ushort id, byte[] data) {
+    private void OnVoiceReceived(ushort id, byte[] data, bool proximity) {
         if (!_soundManager.TryGetOrCreateSpeaker(id, out var speaker)) {
             Logger.Warn($"Could not get or create speaker for player '{id}', cannot play voice");
             return;
@@ -92,6 +92,11 @@ public class ClientVoiceChat {
 
         var decodedBytes = _decoder.Decode(data);
         var decodedShorts = Utils.BytesToShorts(decodedBytes);
+
+        if (!proximity) {
+            speaker.Play(decodedShorts);
+            return;
+        }
 
         var hc = HeroController.instance;
         if (hc == null || hc.gameObject == null) {
@@ -113,6 +118,6 @@ public class ClientVoiceChat {
 
         var pos = remotePos - localPos;
 
-        speaker.Play(decodedShorts, 1f, new Vector3(pos.x, pos.y, pos.z));
+        speaker.Play(decodedShorts, 2f, new Vector3(pos.x, pos.y, pos.z));
     }
 }
