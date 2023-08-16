@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using OpenTK;
@@ -9,38 +10,94 @@ namespace HkmpVoiceChat.Client.Voice;
 public class SoundManager {
     public const int SampleRate = 48000;
     public const int BufferSize = SampleRate / 1000 * 20;
-    
-    private readonly string _deviceName;
+
+    private readonly object Lock = new();
 
     private IntPtr _device;
     private ContextHandle _context;
 
-    public bool IsClosed => _device == IntPtr.Zero;
+    private readonly ConcurrentDictionary<ushort, Speaker> _speakers;
 
-    public SoundManager(string deviceName) {
-        _deviceName = deviceName;
+    public SoundManager() {
+        _speakers = new ConcurrentDictionary<ushort, Speaker>();
     }
 
-    public void Initialize() {
-        _device = OpenSpeaker(_deviceName);
+    private bool IsClosed => _device == IntPtr.Zero;
+
+    public void Open(string deviceName = null) {
+        _device = OpenSpeaker(deviceName);
         _context = Alc.CreateContext(_device, Array.Empty<int>());
 
         Alc.MakeContextCurrent(_context);
     }
 
     public void Close() {
-        if (_context != ContextHandle.Zero) {
-            Alc.DestroyContext(_context);
-            CheckAlcError(_device, 0);
-        }
+        lock (Lock) {
+            foreach (var speaker in _speakers.Values) {
+                speaker.Close();
+            }
 
-        if (_device != IntPtr.Zero) {
-            Alc.CloseDevice(_device);
-            CheckAlcError(_device, 1);
-        }
+            _speakers.Clear();
 
-        _context = ContextHandle.Zero;
-        _device = IntPtr.Zero;
+            if (_context != ContextHandle.Zero) {
+                Alc.DestroyContext(_context);
+                CheckAlcError(_device, 0);
+            }
+
+            if (_device != IntPtr.Zero) {
+                Alc.CloseDevice(_device);
+                CheckAlcError(_device, 1);
+            }
+
+            _context = ContextHandle.Zero;
+            _device = IntPtr.Zero;
+        }
+    }
+
+    public void ChangeDevice(string deviceName) {
+        lock (Lock) {
+            var speakerIds = _speakers.Keys;
+
+            Close();
+
+            Open(deviceName);
+
+            foreach (var id in speakerIds) {
+                TryGetOrCreateSpeaker(id, out _);
+            }
+        }
+    }
+
+    public bool TryGetOrCreateSpeaker(ushort id, out Speaker speaker) {
+        lock (Lock) {
+            if (IsClosed) {
+                speaker = null;
+                return false;
+            }
+
+            if (!_speakers.TryGetValue(id, out speaker)) {
+                speaker = new Speaker();
+                speaker.Open();
+
+                _speakers.TryAdd(id, speaker);
+            }
+
+            return true;
+        }
+    }
+
+    public bool TryRemoveSpeaker(ushort id) {
+        lock (Lock) {
+            if (IsClosed) {
+                return false;
+            }
+
+            if (_speakers.TryRemove(id, out var speaker)) {
+                speaker.Close();
+            }
+
+            return true;
+        }
     }
 
     private IntPtr OpenSpeaker(string name) {
@@ -72,8 +129,6 @@ public class SoundManager {
     public static string GetDefaultSpeaker() {
         var defaultSpeaker = Alc.GetString(IntPtr.Zero, AlcGetString.DefaultDeviceSpecifier);
         CheckAlcError(IntPtr.Zero, 0);
-        
-        ClientVoiceChat.Logger.Debug($"GetDefaultSpeaker result: {defaultSpeaker}");
 
         return defaultSpeaker;
     }
@@ -92,11 +147,12 @@ public class SoundManager {
         }
 
         var stackFrame = new StackFrame(1);
-        ClientVoiceChat.Logger.Debug($"Voicechat sound manager AL error: {stackFrame.GetMethod().DeclaringType}.{stackFrame.GetMethod().Name}[{stackFrame.GetFileLineNumber()}/{index}] {error}");
-        
+        ClientVoiceChat.Logger.Debug(
+            $"Voicechat sound manager AL error: {stackFrame.GetMethod().DeclaringType}.{stackFrame.GetMethod().Name}[{index}] {error}");
+
         return true;
     }
-    
+
     public static bool CheckAlcError(IntPtr device, int index) {
         var error = Alc.GetError(device);
         if (error == AlcError.NoError) {
@@ -104,8 +160,9 @@ public class SoundManager {
         }
 
         var stackFrame = new StackFrame(1);
-        ClientVoiceChat.Logger.Debug($"Voicechat sound manager ALC error: {stackFrame.GetMethod().DeclaringType}.{stackFrame.GetMethod().Name}[{stackFrame.GetFileLineNumber()}/{index}] {error}");
-        
+        ClientVoiceChat.Logger.Debug(
+            $"Voicechat sound manager ALC error: {stackFrame.GetMethod().DeclaringType}.{stackFrame.GetMethod().Name}[{index}] {error}");
+
         return true;
     }
 }

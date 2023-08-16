@@ -5,54 +5,58 @@ using HkmpVoiceChat.Common.Opus;
 
 namespace HkmpVoiceChat.Client.Voice;
 
-public class MicThread {
+public class MicrophoneManager {
     public event Action<byte[]> VoiceDataEvent;
+
+    public Microphone Microphone {
+        private get => _microphone;
+        set {
+            var oldMic = _microphone;
+            _microphone = value;
+
+            oldMic?.Close();
+        }
+    }
 
     private readonly OpusCodec _encoder;
 
     private Thread _thread;
     private bool _isRunning;
+    private Microphone _microphone;
 
-    private Microphone _mic;
-
-    public MicThread() {
+    public MicrophoneManager() {
         _encoder = new OpusCodec();
     }
 
     public void Start() {
-        ClientVoiceChat.Logger.Debug("Starting mic thread");
-        
         if (_isRunning) {
-            ClientVoiceChat.Logger.Debug("Was running, stopping first");
             Stop();
         }
 
-        ClientVoiceChat.Logger.Debug("Creating thread");
         _thread = new Thread(() => {
-            ClientVoiceChat.Logger.Debug("Thread start");
-            _mic = new Microphone(null);
-            ClientVoiceChat.Logger.Debug("Created microphone");
-            _mic.Open();
-            ClientVoiceChat.Logger.Debug("Opened microphone");
-
             _isRunning = true;
             while (_isRunning) {
-                ClientVoiceChat.Logger.Debug("Inside while loop");
                 try {
-                    if (!_mic.IsStarted) {
-                        ClientVoiceChat.Logger.Debug("Mic was not started, starting now");
-                        _mic.Start();
+                    if (Microphone == null) {
+                        Thread.Sleep(50);
+                        continue;
                     }
 
-                    if (_mic.Available() < SoundManager.BufferSize) {
-                        ClientVoiceChat.Logger.Debug($"Not enough available samples: {_mic.Available()}");
+                    if (!Microphone.IsOpen) {
+                        Microphone.Open();
+                    }
+
+                    if (!Microphone.IsStarted) {
+                        Microphone.Start();
+                    }
+
+                    if (Microphone.Available() < SoundManager.BufferSize) {
                         Thread.Sleep(5);
                         continue;
                     }
 
-                    var buff = _mic.Read();
+                    var buff = Microphone.Read();
                     if (buff == null) {
-                        ClientVoiceChat.Logger.Debug("Mic buffer is null");
                         Thread.Sleep(5);
                         continue;
                     }
@@ -73,14 +77,12 @@ public class MicThread {
         if (!_isRunning) {
             return;
         }
-        
-        ClientVoiceChat.Logger.Debug("Stopping mic thread");
 
         _isRunning = false;
 
         _thread.Join(50);
         _thread = null;
 
-        _mic.Close();
+        Microphone?.Close();
     }
 }

@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Hkmp.Api.Client;
 using Hkmp.Logging;
 using Hkmp.Math;
@@ -6,110 +5,100 @@ using HkmpVoiceChat.Client.Voice;
 using HkmpVoiceChat.Common;
 using HkmpVoiceChat.Common.Opus;
 
-namespace HkmpVoiceChat.Client; 
+namespace HkmpVoiceChat.Client;
 
 public class ClientVoiceChat {
     public static ILogger Logger { get; private set; }
-    
+
     private readonly IClientApi _clientApi;
     private readonly ClientNetManager _netManager;
-    private readonly MicThread _micThread;
+    private readonly MicrophoneManager _micManager;
     private readonly SoundManager _soundManager;
 
     private readonly OpusCodec _decoder;
-
-    private readonly ConcurrentDictionary<ushort, Speaker> _speakers;
 
     public ClientVoiceChat(ClientAddon addon, IClientApi clientApi, ILogger logger) {
         Logger = logger;
 
         _clientApi = clientApi;
         _netManager = new ClientNetManager(addon, clientApi.NetClient);
-        _micThread = new MicThread();
+        _micManager = new MicrophoneManager();
 
-        _soundManager = new SoundManager(null);
+        _soundManager = new SoundManager();
 
         _decoder = new OpusCodec();
-
-        _speakers = new ConcurrentDictionary<ushort, Speaker>();
-
-        Logger.Debug("Speakers:");
-        foreach (var speaker in SoundManager.GetAllSpeakers()) {
-            Logger.Debug($"  {speaker}");
-        }
-        Logger.Debug($"Default speaker: {SoundManager.GetDefaultSpeaker()}");
-        
-        Logger.Debug("Microphones:");
-        foreach (var mic in Microphone.GetAllMicrophones()) {
-            Logger.Debug($"  {mic}");
-        }
-        Logger.Debug($"Default mic: {Microphone.GetDefaultMicrophone()}");
     }
 
     public void Initialize() {
-        _soundManager.Initialize();
-        
+        var voiceChatCommand = new VoiceChatCommand(_clientApi.UiManager.ChatBox);
+        _clientApi.CommandManager.RegisterCommand(voiceChatCommand);
+
+        voiceChatCommand.SetMicrophoneEvent += micName => {
+            VoiceChatMod.ModSettings.MicrophoneDeviceName = micName;
+            _micManager.Microphone = new Microphone(micName);
+        };
+        voiceChatCommand.SetSpeakerEvent += speakerName => {
+            VoiceChatMod.ModSettings.SpeakerDeviceName = speakerName;
+            _soundManager.ChangeDevice(speakerName);
+        };
+
+        _soundManager.Open(VoiceChatMod.ModSettings.SpeakerDeviceName);
+        _micManager.Microphone = new Microphone(VoiceChatMod.ModSettings.MicrophoneDeviceName);
+
         _clientApi.ClientManager.ConnectEvent += OnConnect;
         _clientApi.ClientManager.DisconnectEvent += OnDisconnect;
-        
+
         _clientApi.ClientManager.PlayerEnterSceneEvent += OnPlayerEnterScene;
         _clientApi.ClientManager.PlayerLeaveSceneEvent += OnPlayerLeaveScene;
-        
+
         _netManager.VoiceEvent += OnVoiceReceived;
     }
 
     private void OnConnect() {
-        Logger.Debug("OnConnect was called");
-        
-        _micThread.Start();
-        _micThread.VoiceDataEvent += OnVoiceGenerated;
+        Logger.Debug("Client is connected, starting mic capture");
+
+        _micManager.Start();
+        _micManager.VoiceDataEvent += OnVoiceGenerated;
     }
-    
+
     private void OnDisconnect() {
-        Logger.Debug("OnDisconnect was called");
-        
-        _micThread.VoiceDataEvent -= OnVoiceGenerated;
-        _micThread.Stop();
+        Logger.Debug("Client is disconnected, stopping mic capture");
+
+        _micManager.VoiceDataEvent -= OnVoiceGenerated;
+        _micManager.Stop();
     }
 
     private void OnVoiceGenerated(byte[] data) {
         if (_clientApi.NetClient.IsConnected) {
-            Logger.Debug("Voice generated, sending data");
             _netManager.SendVoiceData(data);
         }
     }
-    
+
     private void OnPlayerEnterScene(IClientPlayer player) {
         Logger.Debug("Player entered scene, adding speaker");
-        if (_speakers.TryGetValue(player.Id, out var speaker)) {
-            Logger.Debug("Player had speaker, closing first");
-            speaker.Close();
-        }
-
-        speaker = new Speaker();
-        speaker.Open();
-
-        _speakers.TryAdd(player.Id, speaker);
+        _soundManager.TryGetOrCreateSpeaker(player.Id, out _);
     }
-    
+
     private void OnPlayerLeaveScene(IClientPlayer player) {
         Logger.Debug("Player left scene, closing and removing speaker");
-        if (!_speakers.TryRemove(player.Id, out var speaker)) {
-            return;
-        }
-        
-        speaker.Close();
+        _soundManager.TryRemoveSpeaker(player.Id);
     }
 
     private void OnVoiceReceived(ushort id, byte[] data) {
-        Logger.Debug($"Voice received from server: {id}");
-        if (!_speakers.TryGetValue(id, out var speaker)) {
-            Logger.Warn($"No speaker found for player '{id}', cannot play voice");
+        if (!_soundManager.TryGetOrCreateSpeaker(id, out var speaker)) {
+            Logger.Warn($"Could not get or create speaker for player '{id}', cannot play voice");
             return;
         }
-        
+
         var decodedBytes = _decoder.Decode(data);
         var decodedShorts = Utils.BytesToShorts(decodedBytes);
+
+        var hc = HeroController.instance;
+        if (hc == null || hc.gameObject == null) {
+            Logger.Warn("Local player could not be found, cannot play voice positionally");
+            speaker.Play(decodedShorts);
+            return;
+        }
 
         if (!_clientApi.ClientManager.TryGetPlayer(id, out var player)) {
             Logger.Warn($"No player found for '{id}', cannot play voice positionally");
@@ -117,13 +106,13 @@ public class ClientVoiceChat {
             return;
         }
 
-        var localPlayer = HeroController.instance.gameObject;
+        var localPlayer = hc.gameObject;
         var localPos = localPlayer.transform.position;
 
         var remotePos = player.PlayerObject.transform.position;
 
-        var pos = localPos - remotePos;
-        
-        speaker.Play(decodedShorts, 1f, new Vector3(pos.x, pos.y, pos.z), 60f);
+        var pos = remotePos - localPos;
+
+        speaker.Play(decodedShorts, 1f, new Vector3(pos.x, pos.y, pos.z));
     }
 }

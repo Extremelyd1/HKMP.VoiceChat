@@ -21,7 +21,6 @@ public class ServerVoiceChat {
     }
 
     private void OnVoice(ushort id, byte[] data) {
-        Logger.Info($"Received voice from: {id}");
         if (!_serverApi.ServerManager.TryGetPlayer(id, out var player)) {
             Logger.Warn($"Could not find player '{id}' for received voice data");
             return;
@@ -31,7 +30,6 @@ public class ServerVoiceChat {
             if (player == p || player.CurrentScene != p.CurrentScene) {
                 continue;
             }
-            Logger.Info($"  Sending voice to: {p.Id}");
 
             _netManager.SendVoiceData(p.Id, player.Id, data);
         }

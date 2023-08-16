@@ -4,9 +4,9 @@ using OpenTK.Audio.OpenAL;
 namespace HkmpVoiceChat.Client.Voice;
 
 public class Speaker {
-    public const float DefaultDistance = 48f;
+    public const float DefaultDistance = 60f;
     private const int NumBuffers = 32;
-    
+
     private int _source;
     private int[] _buffers;
 
@@ -21,7 +21,7 @@ public class Speaker {
         SoundManager.CheckAlError(0);
         AL.Source(_source, ALSourceb.Looping, false);
         SoundManager.CheckAlError(1);
-        
+
         AL.DistanceModel(ALDistanceModel.LinearDistance);
         SoundManager.CheckAlError(2);
         AL.Source(_source, ALSourcef.MaxDistance, DefaultDistance);
@@ -34,59 +34,43 @@ public class Speaker {
     }
 
     public void Play(short[] data, float volume = 1f, Vector3 position = null, float maxDistance = DefaultDistance) {
-        ClientVoiceChat.Logger.Debug("Play called");
-        
         RemoveProcessedBuffers();
-        
-        var buffers = GetQueuedBuffers();
-        var stopped = GetState() == ALSourceState.Initial || GetState() == ALSourceState.Stopped || buffers <= 1;
-        // if (stopped) {
-        //     ProximityChatAddon.Log.Debug($"State was stopped, writing {OutputBufferSize} empty buffers");
-        //     for (var i = 0; i < OutputBufferSize; i++) {
-        //         Write(new short[SoundManager.BufferSize], 1f, position, maxDistance);
-        //         PrintState();
-        //     }
-        // }
-        
-        ClientVoiceChat.Logger.Debug("Writing play data to buffer");
 
         Write(data, volume, position, maxDistance);
 
+        var buffers = GetQueuedBuffers();
+        var stopped = GetState() == ALSourceState.Initial || GetState() == ALSourceState.Stopped || buffers <= 1;
+
         if (stopped) {
-            ClientVoiceChat.Logger.Debug("State was stopped, start playing source");
             AL.SourcePlay(_source);
             SoundManager.CheckAlError(0);
         }
     }
 
     private void Write(short[] data, float volume, Vector3 position, float maxDistance) {
-        ClientVoiceChat.Logger.Debug("Writing buffer for data");
         if (position != null) {
             SetPosition(position, maxDistance);
         }
 
-        AL.Source(_source, ALSourcef.MaxGain, 20f);
+        AL.Source(_source, ALSourcef.MaxGain, 1f);
         SoundManager.CheckAlError(0);
         AL.Source(_source, ALSourcef.Gain, volume);
         SoundManager.CheckAlError(1);
         AL.Listener(ALListenerf.Gain, 1f);
         SoundManager.CheckAlError(2);
-        
+
         var queuedBuffers = GetQueuedBuffers();
         if (queuedBuffers >= _buffers.Length) {
-            ClientVoiceChat.Logger.Debug($"Full playback buffer: {queuedBuffers}/{_buffers.Length}");
-
             AL.GetSource(_source, ALGetSourcei.SampleOffset, out var sampleOffset);
             SoundManager.CheckAlError(3);
             AL.Source(_source, ALSourcei.SampleOffset, sampleOffset + SoundManager.BufferSize);
             SoundManager.CheckAlError(4);
-            
+
             RemoveProcessedBuffers();
         }
-        
-        ClientVoiceChat.Logger.Debug($"Buffering and queuing data into buffer: {_bufferIndex}");
-        
-        AL.BufferData(_buffers[_bufferIndex], ALFormat.Mono16, data, data.Length * sizeof(short), SoundManager.SampleRate);
+
+        AL.BufferData(_buffers[_bufferIndex], ALFormat.Mono16, data, data.Length * sizeof(short),
+            SoundManager.SampleRate);
         SoundManager.CheckAlError(5);
         AL.SourceQueueBuffer(_source, _buffers[_bufferIndex]);
         SoundManager.CheckAlError(6);
@@ -105,7 +89,7 @@ public class Speaker {
         AL.Listener(ALListener3f.Position, 0f, 0f, 0f);
         SoundManager.CheckAlError(0);
 
-        var orientation = new[] { 0f, 0f, 1f, 0f, 1f, 0f };
+        var orientation = new[] { 0f, 0f, -1f, 0f, 1f, 0f };
         AL.Listener(ALListenerfv.Orientation, ref orientation);
         SoundManager.CheckAlError(1);
 
@@ -130,7 +114,7 @@ public class Speaker {
                 AL.SourceStop(_source);
                 SoundManager.CheckAlError(0);
             }
-            
+
             AL.GetSource(_source, ALGetSourcei.BuffersProcessed, out var processed);
             SoundManager.CheckAlError(1);
 
@@ -150,22 +134,12 @@ public class Speaker {
     }
 
     private void RemoveProcessedBuffers() {
-        ClientVoiceChat.Logger.Debug("Removing processed buffers");
-        
         AL.GetSource(_source, ALGetSourcei.BuffersProcessed, out var processed);
         SoundManager.CheckAlError(0);
 
         if (processed > 0) {
-            ClientVoiceChat.Logger.Debug($"  Buffers processed: {processed}");
-            
-            var buffers = AL.SourceUnqueueBuffers(_source, processed);
+            AL.SourceUnqueueBuffers(_source, processed);
             SoundManager.CheckAlError(1);
-            
-            ClientVoiceChat.Logger.Debug($"  Unqueued: {buffers.Length}");
-
-            // AL.DeleteBuffers(buffers);
-        } else {
-            ClientVoiceChat.Logger.Debug("  No buffers processed");
         }
     }
 

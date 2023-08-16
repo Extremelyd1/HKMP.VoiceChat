@@ -10,17 +10,16 @@ namespace HkmpVoiceChat.Client;
 
 public class ClientNetManager {
     public event Action<ushort, byte[]> VoiceEvent;
-    
+
     private readonly IClientAddonNetworkSender<ServerPacketId> _netSender;
 
     public ClientNetManager(ClientAddon addon, INetClient netClient) {
         _netSender = netClient.GetNetworkSender<ServerPacketId>(addon);
 
         var netReceiver = netClient.GetNetworkReceiver<ClientPacketId>(addon, InstantiatePacket);
-        
-        netReceiver.RegisterPacketHandler<ClientVoicePacket>(ClientPacketId.Voice, packet => {
-            VoiceEvent?.Invoke(packet.Id, packet.VoiceData);
-        });
+
+        netReceiver.RegisterPacketHandler<ClientVoicePacket>(ClientPacketId.Voice,
+            packet => { VoiceEvent?.Invoke(packet.Id, packet.VoiceData); });
     }
 
     public void SendVoiceData(byte[] data) {
@@ -28,7 +27,7 @@ public class ClientNetManager {
             ClientVoiceChat.Logger.Error("Voice data exceeds max size!");
             return;
         }
-        
+
         _netSender.SendCollectionData(ServerPacketId.Voice, new ServerVoicePacket {
             VoiceData = data
         });
