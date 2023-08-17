@@ -1,17 +1,25 @@
 using Hkmp.Math;
+using HkmpVoiceChat.Common;
+using HkmpVoiceChat.Common.Opus;
 using OpenTK.Audio.OpenAL;
 
 namespace HkmpVoiceChat.Client.Voice;
 
 public class Speaker {
-    public const float DefaultDistance = 60f;
+    private const float DefaultDistance = 60f;
     private const int NumBuffers = 32;
 
+    private readonly OpusCodec _decoder;
+    
     private int _source;
     private int[] _buffers;
 
     private int _bufferIndex;
 
+    public Speaker() {
+        _decoder = new OpusCodec();
+    }
+    
     public void Open() {
         if (HasValidSource()) {
             return;
@@ -33,7 +41,10 @@ public class Speaker {
         SoundManager.CheckAlError(5);
     }
 
-    public void Play(short[] data, float volume = 1f, Vector3 position = null, float maxDistance = DefaultDistance) {
+    public void Play(byte[] encodedData, float volume = 1f, Vector3 position = null, float maxDistance = DefaultDistance) {
+        var byteData = _decoder.Decode(encodedData);
+        var data = Utils.BytesToShorts(byteData);
+        
         RemoveProcessedBuffers();
 
         Write(data, volume, position, maxDistance);

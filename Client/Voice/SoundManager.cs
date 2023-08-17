@@ -11,8 +11,6 @@ public class SoundManager {
     public const int SampleRate = 48000;
     public const int BufferSize = SampleRate / 1000 * 20;
 
-    private readonly object Lock = new();
-
     private IntPtr _device;
     private ContextHandle _context;
 
@@ -32,72 +30,64 @@ public class SoundManager {
     }
 
     public void Close() {
-        lock (Lock) {
-            foreach (var speaker in _speakers.Values) {
-                speaker.Close();
-            }
-
-            _speakers.Clear();
-
-            if (_context != ContextHandle.Zero) {
-                Alc.DestroyContext(_context);
-                CheckAlcError(_device, 0);
-            }
-
-            if (_device != IntPtr.Zero) {
-                Alc.CloseDevice(_device);
-                CheckAlcError(_device, 1);
-            }
-
-            _context = ContextHandle.Zero;
-            _device = IntPtr.Zero;
+        foreach (var speaker in _speakers.Values) {
+            speaker.Close();
         }
+
+        _speakers.Clear();
+
+        if (_context != ContextHandle.Zero) {
+            Alc.DestroyContext(_context);
+            CheckAlcError(_device, 0);
+        }
+
+        if (_device != IntPtr.Zero) {
+            Alc.CloseDevice(_device);
+            CheckAlcError(_device, 1);
+        }
+
+        _context = ContextHandle.Zero;
+        _device = IntPtr.Zero;
     }
 
     public void ChangeDevice(string deviceName) {
-        lock (Lock) {
-            var speakerIds = _speakers.Keys;
+        var speakerIds = _speakers.Keys;
 
-            Close();
+        Close();
 
-            Open(deviceName);
+        Open(deviceName);
 
-            foreach (var id in speakerIds) {
-                TryGetOrCreateSpeaker(id, out _);
-            }
+        foreach (var id in speakerIds) {
+            TryGetOrCreateSpeaker(id, out _);
         }
     }
 
     public bool TryGetOrCreateSpeaker(ushort id, out Speaker speaker) {
-        lock (Lock) {
-            if (IsClosed) {
-                speaker = null;
-                return false;
-            }
-
-            if (!_speakers.TryGetValue(id, out speaker)) {
-                speaker = new Speaker();
-                speaker.Open();
-
-                _speakers.TryAdd(id, speaker);
-            }
-
-            return true;
+        if (IsClosed) {
+            speaker = null;
+            return false;
         }
+
+        if (!_speakers.TryGetValue(id, out speaker)) {
+            speaker = new Speaker();
+            speaker.Open();
+
+            _speakers.TryAdd(id, speaker);
+        }
+
+        return true;
     }
 
     public bool TryRemoveSpeaker(ushort id) {
-        lock (Lock) {
-            if (IsClosed) {
-                return false;
-            }
-
-            if (_speakers.TryRemove(id, out var speaker)) {
-                speaker.Close();
-            }
-
-            return true;
+        if (IsClosed) {
+            return false;
         }
+
+        if (_speakers.TryRemove(id, out var speaker)) {
+            speaker.Close();
+        }
+
+        return true;
     }
 
     private IntPtr OpenSpeaker(string name) {
@@ -148,7 +138,7 @@ public class SoundManager {
 
         var stackFrame = new StackFrame(1);
         ClientVoiceChat.Logger.Debug(
-            $"Voicechat sound manager AL error: {stackFrame.GetMethod().DeclaringType}.{stackFrame.GetMethod().Name}[{index}] {error}");
+            $"VoiceChat sound manager AL error: {stackFrame.GetMethod().DeclaringType}.{stackFrame.GetMethod().Name}[{index}] {error}");
 
         return true;
     }
@@ -161,7 +151,7 @@ public class SoundManager {
 
         var stackFrame = new StackFrame(1);
         ClientVoiceChat.Logger.Debug(
-            $"Voicechat sound manager ALC error: {stackFrame.GetMethod().DeclaringType}.{stackFrame.GetMethod().Name}[{index}] {error}");
+            $"VoiceChat sound manager ALC error: {stackFrame.GetMethod().DeclaringType}.{stackFrame.GetMethod().Name}[{index}] {error}");
 
         return true;
     }

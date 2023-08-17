@@ -2,8 +2,6 @@ using Hkmp.Api.Client;
 using Hkmp.Logging;
 using Hkmp.Math;
 using HkmpVoiceChat.Client.Voice;
-using HkmpVoiceChat.Common;
-using HkmpVoiceChat.Common.Opus;
 
 namespace HkmpVoiceChat.Client;
 
@@ -15,8 +13,6 @@ public class ClientVoiceChat {
     private readonly MicrophoneManager _micManager;
     private readonly SoundManager _soundManager;
 
-    private readonly OpusCodec _decoder;
-
     public ClientVoiceChat(ClientAddon addon, IClientApi clientApi, ILogger logger) {
         Logger = logger;
 
@@ -25,8 +21,6 @@ public class ClientVoiceChat {
         _micManager = new MicrophoneManager();
 
         _soundManager = new SoundManager();
-
-        _decoder = new OpusCodec();
     }
 
     public void Initialize() {
@@ -90,24 +84,24 @@ public class ClientVoiceChat {
             return;
         }
 
-        var decodedBytes = _decoder.Decode(data);
-        var decodedShorts = Utils.BytesToShorts(decodedBytes);
+        // Debug volume
+        const float volume = 2f;
 
         if (!proximity) {
-            speaker.Play(decodedShorts);
+            speaker.Play(data, volume);
             return;
         }
 
         var hc = HeroController.instance;
         if (hc == null || hc.gameObject == null) {
             Logger.Warn("Local player could not be found, cannot play voice positionally");
-            speaker.Play(decodedShorts);
+            speaker.Play(data, volume);
             return;
         }
 
         if (!_clientApi.ClientManager.TryGetPlayer(id, out var player)) {
             Logger.Warn($"No player found for '{id}', cannot play voice positionally");
-            speaker.Play(decodedShorts);
+            speaker.Play(data, volume);
             return;
         }
 
@@ -118,6 +112,6 @@ public class ClientVoiceChat {
 
         var pos = remotePos - localPos;
 
-        speaker.Play(decodedShorts, 2f, new Vector3(pos.x, pos.y, pos.z));
+        speaker.Play(data, volume, new Vector3(pos.x, pos.y, pos.z));
     }
 }

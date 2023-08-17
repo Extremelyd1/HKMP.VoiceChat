@@ -55,7 +55,7 @@ public class Microphone {
         _started = false;
 
         var available = Available();
-        var buff = new float[available];
+        var buff = new short[available];
         var handle = GCHandle.Alloc(buff, GCHandleType.Pinned);
 
         try {
@@ -111,14 +111,14 @@ public class Microphone {
     private IntPtr OpenMic(string name) {
         try {
             return TryOpenMic(name);
-        } catch (Exception e) {
+        } catch (Exception) {
             if (name != null) {
                 ClientVoiceChat.Logger.Debug($"Failed to open microphone '{name}', falling back to default microphone");
             }
 
             try {
                 return TryOpenMic(GetDefaultMicrophone());
-            } catch (Exception ex) {
+            } catch (Exception) {
                 return TryOpenMic(null);
             }
         }
