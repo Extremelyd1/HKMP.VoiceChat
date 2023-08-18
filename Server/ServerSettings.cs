@@ -18,12 +18,14 @@ public class ServerSettings {
     /// Whether the volume of voice chat should be based on the proximity of the source and listener.
     /// </summary>
     [JsonProperty("proximity_based_volume")]
+    [SettingAlias("proximity", "prox")]
     public bool ProximityBasedVolume { get; set; }
 
     /// <summary>
     /// Whether to hear your team's voices globally independent of proximity or scenes.
     /// </summary>
     [JsonProperty("team_voices_globally")]
+    [SettingAlias("teamglobal", "teamglobally")]
     public bool TeamVoicesGlobally { get; set; }
 
     /// <summary>
@@ -31,6 +33,7 @@ public class ServerSettings {
     /// proximity.
     /// </summary>
     [JsonProperty("team_voices_only")]
+    [SettingAlias("teamonly")]
     public bool TeamVoicesOnly { get; set; }
 
     /// <summary>

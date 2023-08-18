@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Hkmp.Api.Server;
+using Hkmp.Game;
 using Hkmp.Logging;
 
 namespace HkmpVoiceChat.Server; 
@@ -25,7 +26,7 @@ public class ServerVoiceChat {
     }
 
     public void Initialize() {
-        _serverApi.CommandManager.RegisterCommand(new VoiceChatCommand(_settings, _broadcasters));
+        _serverApi.CommandManager.RegisterCommand(new ServerVoiceChatCommand(_settings, _broadcasters));
 
         _netManager.VoiceEvent += OnVoice;
     }
@@ -48,7 +49,7 @@ public class ServerVoiceChat {
                 continue;
             }
 
-            var sameTeam = senderTeam == receiver.Team;
+            var sameTeam = senderTeam == receiver.Team && senderTeam != Team.None;
 
             if (_settings.TeamVoicesOnly && !sameTeam) {
                 continue;

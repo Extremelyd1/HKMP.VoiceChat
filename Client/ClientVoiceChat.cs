@@ -24,7 +24,7 @@ public class ClientVoiceChat {
     }
 
     public void Initialize() {
-        var voiceChatCommand = new DeviceCommand(_clientApi.UiManager.ChatBox);
+        var voiceChatCommand = new ClientVoiceChatCommand(_clientApi.UiManager.ChatBox);
         _clientApi.CommandManager.RegisterCommand(voiceChatCommand);
 
         voiceChatCommand.SetMicrophoneEvent += micName => {

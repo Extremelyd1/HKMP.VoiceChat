@@ -1,16 +1,17 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Hkmp.Api.Command;
 using Hkmp.Api.Command.Server;
 
 namespace HkmpVoiceChat.Server;
 
-public class VoiceChatCommand : IServerCommand {
+public class ServerVoiceChatCommand : IServerCommand {
     /// <inheritdoc />
-    public string Trigger => "/voicechat";
+    public string Trigger => "/voicechatserver";
 
     /// <inheritdoc />
-    public string[] Aliases => new[] { "/vc" };
+    public string[] Aliases => new[] { "/vcs" };
 
     /// <inheritdoc />
     public bool AuthorizedOnly => true;
@@ -19,7 +20,7 @@ public class VoiceChatCommand : IServerCommand {
 
     private readonly HashSet<ushort> _broadcasters;
 
-    public VoiceChatCommand(ServerSettings settings, HashSet<ushort> broadcasters) {
+    public ServerVoiceChatCommand(ServerSettings settings, HashSet<ushort> broadcasters) {
         _settings = settings;
         _broadcasters = broadcasters;
     }
@@ -63,11 +64,21 @@ public class VoiceChatCommand : IServerCommand {
 
         PropertyInfo settingProperty = null;
         foreach (var prop in propertyInfos) {
+            settingName = settingName.ToLower().Replace("_", "");
+            
             // Check if the property equals the setting name given as argument ignoring capitalization
-            // Also ignore the auto property, because it can't change value without extra behaviour
-            if (prop.Name.ToLower().Equals(settingName.ToLower().Replace("_", ""))) {
+            if (prop.Name.ToLower().Equals(settingName)) {
                 settingProperty = prop;
                 break;
+            }
+            
+            // Alternatively check for alias attribute and all aliases
+            var aliasAttribute = prop.GetCustomAttribute<SettingAliasAttribute>();
+            if (aliasAttribute != null) {
+                if (aliasAttribute.Aliases.Contains(settingName)) {
+                    settingProperty = prop;
+                    break;
+                }
             }
         }
 
