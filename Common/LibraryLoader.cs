@@ -26,7 +26,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace HkmpVoiceChat.Common.Opus;
+namespace HkmpVoiceChat.Common;
 
 /// <summary>
 /// Library loader.

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using HkmpVoiceChat.Common;
 using HkmpVoiceChat.Common.Opus;
+using HkmpVoiceChat.Common.WebRtcVad;
 
 namespace HkmpVoiceChat.Client.Voice;
 
@@ -19,13 +20,22 @@ public class MicrophoneManager {
     }
 
     private readonly OpusCodec _encoder;
+    private WebRtcVad _webRtcVad;
 
     private Thread _thread;
     private bool _isRunning;
     private Microphone _microphone;
 
+    private bool _activating;
+    private byte[] _lastBuff;
+
     public MicrophoneManager() {
         _encoder = new OpusCodec();
+        _webRtcVad = new WebRtcVad {
+            SampleRate = SoundManager.SampleRate,
+            FrameLength = SoundManager.FrameLength,
+            OperatingMode = OperatingMode.Aggressive
+        };
     }
 
     public void Start() {
@@ -62,9 +72,29 @@ public class MicrophoneManager {
                     }
 
                     var byteBuff = Utils.ShortsToBytes(buff);
-                    var encodedBuff = _encoder.Encode(byteBuff);
+                    var hasSpeech = _webRtcVad.HasSpeech(buff);
 
-                    VoiceDataEvent?.Invoke(encodedBuff);
+                    if (!_activating) {
+                        if (hasSpeech) {
+                            if (_lastBuff != null) {
+                                VoiceDataEvent?.Invoke(_encoder.Encode(_lastBuff));
+                            }
+                            VoiceDataEvent?.Invoke(_encoder.Encode(byteBuff));
+                            
+                            _activating = true;
+                            ClientVoiceChat.Logger.Debug("Mic buffer has speech, activating");
+                        }
+                    } else {
+                        if (!hasSpeech) {
+                            _activating = false;
+                            
+                            ClientVoiceChat.Logger.Debug("Mic buffer does not have speech, de-activating");
+                        } else {
+                            VoiceDataEvent?.Invoke(_encoder.Encode(byteBuff));
+                        }
+                    }
+
+                    _lastBuff = byteBuff;
                 } catch (Exception e) {
                     ClientVoiceChat.Logger.Debug($"Error in mic thread:\n{e}");
                 }

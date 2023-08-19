@@ -9,7 +9,8 @@ namespace HkmpVoiceChat.Client.Voice;
 
 public class SoundManager {
     public const int SampleRate = 48000;
-    public const int BufferSize = SampleRate / 1000 * 20;
+    public const int FrameLength = 20;
+    public const int BufferSize = SampleRate / 1000 * FrameLength;
 
     private IntPtr _device;
     private ContextHandle _context;
