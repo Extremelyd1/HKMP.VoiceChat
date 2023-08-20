@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using HkmpVoiceChat.Common;
 using HkmpVoiceChat.Common.Opus;
+using HkmpVoiceChat.Common.RNNoise;
 using HkmpVoiceChat.Common.WebRtcVad;
 
 namespace HkmpVoiceChat.Client.Voice;
@@ -20,7 +21,8 @@ public class MicrophoneManager {
     }
 
     private readonly OpusCodec _encoder;
-    private WebRtcVad _webRtcVad;
+    private readonly RNNoise _denoiser;
+    private readonly WebRtcVad _webRtcVad;
 
     private Thread _thread;
     private bool _isRunning;
@@ -31,6 +33,7 @@ public class MicrophoneManager {
 
     public MicrophoneManager() {
         _encoder = new OpusCodec();
+        _denoiser = new RNNoise();
         _webRtcVad = new WebRtcVad {
             SampleRate = SoundManager.SampleRate,
             FrameLength = SoundManager.FrameLength,
@@ -70,6 +73,8 @@ public class MicrophoneManager {
                         Thread.Sleep(5);
                         continue;
                     }
+
+                    buff = _denoiser.ProcessFrame(buff);
 
                     var byteBuff = Utils.ShortsToBytes(buff);
                     var hasSpeech = _webRtcVad.HasSpeech(buff);
