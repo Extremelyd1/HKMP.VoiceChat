@@ -16,6 +16,7 @@ public class ClientVoiceChatCommand : IClientCommand {
 
     public event Action<string> SetMicrophoneEvent;
     public event Action<string> SetSpeakerEvent;
+    public event Action ToggleMuteEvent;
 
     private readonly IChatBox _chatBox;
 
@@ -31,7 +32,7 @@ public class ClientVoiceChatCommand : IClientCommand {
     /// <inheritdoc />
     public void Execute(string[] args) {
         void SendUsage() {
-            _chatBox.AddMessage($"Invalid usage: {Trigger} <device>");
+            _chatBox.AddMessage($"Invalid usage: {Trigger} <mute|volume|device>");
         }
 
         if (args.Length < 2) {
@@ -40,8 +41,69 @@ public class ClientVoiceChatCommand : IClientCommand {
         }
 
         var action = args[1];
-        if (action == "device") {
+        if (action == "mute") {
+            HandleMute(args);
+        } else if (action == "volume") {
+            HandleVolume(args);
+        } else if (action == "device") {
             HandleDevice(args);
+        } else {
+            SendUsage();
+        }
+    }
+
+    private void HandleMute(string[] args) {
+        ToggleMuteEvent?.Invoke();
+    }
+
+    private void HandleVolume(string[] args) {
+        void SendUsage() {
+            _chatBox.AddMessage($"Invalid usage: {Trigger} volume <mic|speaker> <value>");
+        }
+
+        if (args.Length < 4) {
+            SendUsage();
+            return;
+        }
+
+        var action = args[2];
+        var value = args[3];
+        if (action == "mic") {
+            void SendMicUsage() {
+                SendUsage();
+                _chatBox.AddMessage($"Invalid microphone amplification value '{value}', please provide a value between 0 and 4");
+            }
+            
+            if (!float.TryParse(value, out var floatValue)) {
+                SendMicUsage();
+                return;
+            }
+
+            if (floatValue <= 0 || floatValue > 4) {
+                SendMicUsage();
+                return;
+            }
+
+            VoiceChatMod.ModSettings.MicrophoneAmplification = floatValue;
+            _chatBox.AddMessage($"Set microphone amplification value to '{value}'");
+        } else if (action == "speaker") {
+            void SendSpeakerUsage() {
+                SendUsage();
+                _chatBox.AddMessage($"Invalid speaker volume '{value}', please provide a value between 0 and 6");
+            }
+            
+            if (!float.TryParse(value, out var floatValue)) {
+                SendSpeakerUsage();
+                return;
+            }
+
+            if (floatValue < 0 || floatValue > 6) {
+                SendSpeakerUsage();
+                return;
+            }
+
+            VoiceChatMod.ModSettings.VoiceChatVolume = floatValue;
+            _chatBox.AddMessage($"Set speaker volume to '{value}'");
         } else {
             SendUsage();
         }

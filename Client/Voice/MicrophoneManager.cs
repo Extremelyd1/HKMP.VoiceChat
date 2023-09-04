@@ -73,9 +73,14 @@ public class MicrophoneManager {
                         Thread.Sleep(5);
                         continue;
                     }
+                    
+                    // Adjust volume of mic data based on config value
+                    buff = VolumeManager.AmplifyAudioData(buff, VoiceChatMod.ModSettings.MicrophoneAmplification);
 
+                    // Denoise the mic data
                     buff = _denoiser.ProcessFrame(buff);
 
+                    // Convert the mic data to bytes and check whether it contains speech with WebRTC VAD
                     var byteBuff = Utils.ShortsToBytes(buff);
                     var hasSpeech = _webRtcVad.HasSpeech(buff);
 

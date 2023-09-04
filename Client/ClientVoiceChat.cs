@@ -13,6 +13,8 @@ public class ClientVoiceChat {
     private readonly MicrophoneManager _micManager;
     private readonly SoundManager _soundManager;
 
+    private bool _muted;
+
     public ClientVoiceChat(ClientAddon addon, IClientApi clientApi, ILogger logger) {
         Logger = logger;
 
@@ -34,6 +36,11 @@ public class ClientVoiceChat {
         voiceChatCommand.SetSpeakerEvent += speakerName => {
             VoiceChatMod.ModSettings.SpeakerDeviceName = speakerName;
             _soundManager.ChangeDevice(speakerName);
+        };
+        voiceChatCommand.ToggleMuteEvent += () => {
+            _muted = !_muted;
+
+            _clientApi.UiManager.ChatBox.AddMessage($"Microphone is now {(_muted ? "" : "un")}muted");
         };
 
         _soundManager.Open(VoiceChatMod.ModSettings.SpeakerDeviceName);
@@ -63,7 +70,7 @@ public class ClientVoiceChat {
     }
 
     private void OnVoiceGenerated(byte[] data) {
-        if (_clientApi.NetClient.IsConnected) {
+        if (_clientApi.NetClient.IsConnected && !_muted) {
             _netManager.SendVoiceData(data);
         }
     }
@@ -84,8 +91,7 @@ public class ClientVoiceChat {
             return;
         }
 
-        // Debug volume
-        const float volume = 2f;
+        var volume = VoiceChatMod.ModSettings.VoiceChatVolume;
 
         if (!proximity) {
             speaker.Play(data, volume);
