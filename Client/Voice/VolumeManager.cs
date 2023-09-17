@@ -32,11 +32,25 @@ public static class VolumeManager {
         _index = (_index + 1) % _maxMultipliers.Length;
 
         // Find the minimum multiplier for the last samples that were stored
-        var min = 0f;
+        // Initialized at 1 so as a fallback we don't do any amplification
+        var min = -1f;
         foreach (var mul in _maxMultipliers) {
+            if (mul < 0f) {
+                continue;
+            }
+
+            if (min < 0f) {
+                min = mul;
+                continue;
+            }
+            
             if (mul < min) {
                 min = mul;
             }
+        }
+
+        if (min < 0f) {
+            min = 1f;
         }
 
         var maxMultiplier = Math.Min(min, multiplier);
@@ -77,7 +91,7 @@ public static class VolumeManager {
         }
 
         if (max == 0) {
-            return 0f;
+            return 1f;
         }
 
         return Math.Min(multiplier, MaxAmplification / (float) max);
