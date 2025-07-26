@@ -32,7 +32,7 @@ namespace HkmpVoiceChat.Common.Opus;
 /// </summary>
 public class OpusDecoder : IDisposable {
     /// <summary>
-    /// Opus decoder.
+    /// Int pointer to the native decoder.
     /// </summary>
     private IntPtr _decoder;
 
@@ -62,6 +62,9 @@ public class OpusDecoder : IDisposable {
         _sampleSize = sizeof(ushort) * outputChannelCount;
     }
 
+    /// <summary>
+    /// Deconstructor for when this instance is garbage collected. Will dispose the object.
+    /// </summary>
     ~OpusDecoder() {
         Dispose();
     }

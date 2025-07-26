@@ -5,8 +5,14 @@ using Modding;
 
 namespace HkmpVoiceChat.Client; 
 
+/// <summary>
+/// The voice chat mod class.
+/// </summary>
 public class VoiceChatMod : Mod, IGlobalSettings<ModSettings> {
-    public static ModSettings ModSettings = new ModSettings();
+    /// <summary>
+    /// Statically accessible mod settings.
+    /// </summary>
+    public static ModSettings ModSettings = new();
 
     /// <inheritdoc />
     public VoiceChatMod() : base("HKMP.VoiceChat") {

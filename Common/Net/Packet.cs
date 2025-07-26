@@ -3,9 +3,19 @@ using Hkmp.Networking.Packet;
 
 namespace HkmpVoiceChat.Common.Net;
 
+/// <summary>
+/// Packet for server-bound voice data.
+/// </summary>
 public class ServerVoicePacket : IPacketData {
+    /// <summary>
+    /// The maximum number of bytes that the <see cref="VoiceData"/> array can have.
+    /// </summary>
     public const ushort MaxSize = ushort.MaxValue;
 
+    /// <summary>
+    /// The voice data as a byte array. This byte array should already be encoded using an encoder. It will be sent
+    /// as is.
+    /// </summary>
     public byte[] VoiceData { get; set; }
     
     /// <inheritdoc />
@@ -37,9 +47,18 @@ public class ServerVoicePacket : IPacketData {
     public bool DropReliableDataIfNewerExists => false;
 }
 
+/// <summary>
+/// Packet for client-bound voice data.
+/// </summary>
 public class ClientVoicePacket : ServerVoicePacket {
+    /// <summary>
+    /// The ID of the player from which this voice data is.
+    /// </summary>
     public ushort Id { get; set; }
-    
+
+    /// <summary>
+    /// Whether this voice data should be played with proximity-based volume.
+    /// </summary>
     public bool Proximity { get; set; }
 
     /// <inheritdoc />

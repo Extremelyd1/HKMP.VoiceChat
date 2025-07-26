@@ -45,10 +45,10 @@ public class OpusEncoder : IDisposable {
     /// <summary>
     /// Permitted frame sizes in ms.
     /// </summary>
-    private readonly float[] _permittedFrameSizesInMilliSec = {
+    private readonly float[] _permittedFrameSizesInMilliSec = [
         2.5f, 5, 10,
         20, 40, 60
-    };
+    ];
 
     /// <summary>
     /// Creates a new Opus encoder.
@@ -73,8 +73,8 @@ public class OpusEncoder : IDisposable {
 
         _encoder = encoder;
 
-        const int BIT_DEPTH = 16;
-        _sampleSize = SampleSize(BIT_DEPTH, srcChannelCount);
+        const int bitDepth = 16;
+        _sampleSize = SampleSize(bitDepth, srcChannelCount);
 
         PermittedFrameSizes = new int[_permittedFrameSizesInMilliSec.Length];
         for (var i = 0; i < _permittedFrameSizesInMilliSec.Length; i++)
@@ -85,6 +85,9 @@ public class OpusEncoder : IDisposable {
         return bitDepth / 8 * channelCount;
     }
 
+    /// <summary>
+    /// Deconstructor for when this instance is garbage collected. Will dispose the object.
+    /// </summary>
     ~OpusEncoder() {
         Dispose();
     }

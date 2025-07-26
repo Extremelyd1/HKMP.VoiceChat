@@ -2,21 +2,27 @@ using System;
 
 namespace HkmpVoiceChat.Client.Voice; 
 
+/// <summary>
+/// Static class for managing volume levels of audio data.
+/// </summary>
 public static class VolumeManager {
+    /// <summary>
+    /// The maximum amplification that audio can have.
+    /// </summary>
     private const short MaxAmplification = short.MaxValue - 1;
 
     /// <summary>
     /// Array containing the maximum amplification possible for a specific array of audio data. Used to keep a steady
     /// amplification based on previous samples to prevent sudden jumps in volume.
     /// </summary>
-    private static readonly float[] _maxMultipliers;
+    private static readonly float[] MaxMultipliers;
     /// <summary>
     /// The current index for storing the new maximum amplification in the array.
     /// </summary>
     private static int _index;
 
     static VolumeManager() {
-        _maxMultipliers = new float[50];
+        MaxMultipliers = new float[50];
     }
 
     /// <summary>
@@ -28,13 +34,13 @@ public static class VolumeManager {
     /// <returns>The new amplified audio data.</returns>
     public static short[] AmplifyAudioData(short[] audio, float multiplier) {
         // Get the maximum amplification possible for the audio and store it in the array
-        _maxMultipliers[_index] = GetMaximumAmplification(audio, multiplier);
-        _index = (_index + 1) % _maxMultipliers.Length;
+        MaxMultipliers[_index] = GetMaximumAmplification(audio, multiplier);
+        _index = (_index + 1) % MaxMultipliers.Length;
 
         // Find the minimum multiplier for the last samples that were stored
         // Initialized at 1 so as a fallback we don't do any amplification
         var min = -1f;
-        foreach (var mul in _maxMultipliers) {
+        foreach (var mul in MaxMultipliers) {
             if (mul < 0f) {
                 continue;
             }

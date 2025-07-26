@@ -1,8 +1,11 @@
 ﻿namespace HkmpVoiceChat.Common.Opus;
 
+/// <summary>
+/// Constants for the Opus encoding.
+/// </summary>
 public static class Constants {
-    public const int DEFAULT_AUDIO_SAMPLE_RATE = 48000;
-    public const byte DEFAULT_AUDIO_SAMPLE_BITS = 16;
-    public const byte DEFAULT_AUDIO_SAMPLE_CHANNELS = 1;
-    public const ushort DEFAULT_AUDIO_FRAME_SIZE = 960;
+    public const int DefaultAudioSampleRate = 48000;
+    public const byte DefaultAudioSampleBits = 16;
+    public const byte DefaultAudioSampleChannels = 1;
+    public const ushort DefaultAudioFrameSize = 960;
 }

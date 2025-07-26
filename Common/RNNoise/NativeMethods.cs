@@ -6,26 +6,38 @@ using HkmpVoiceChat.Client;
 
 namespace HkmpVoiceChat.Common.RNNoise; 
 
+/// <summary>
+/// Wraps the RNNoise library.
+/// </summary>
 public class NativeMethods {
+    /// <summary>
+    /// Static constructor for loading native assemblies based on the used operating system.
+    /// </summary>
     static NativeMethods() {
         IntPtr image;
+        var executingAssemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        if (executingAssemblyPath == null) {
+            ClientVoiceChat.Logger.Error("Could not get path of executing assembly, cannot initialize NativeMethods for RNNoise");
+            return;
+        }
+
         if (PlatformDetails.IsMac) {
             image = LibraryLoader.Load(Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                executingAssemblyPath,
                 "Natives",
                 "Mac",
                 "librnnoise.dylib"
             ));
         } else if (PlatformDetails.IsWindows) {
             image = LibraryLoader.Load(Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                executingAssemblyPath,
                 "Natives",
                 "Windows",
                 "rnnoise.dll"
             ));
         } else {
             image = LibraryLoader.Load(Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                executingAssemblyPath,
                 "Natives",
                 "Linux",
                 "librnnoise.so"
@@ -48,7 +60,7 @@ public class NativeMethods {
                 member.SetValue(null, Marshal.GetDelegateForFunctionPointer(ptr, fieldType));
             }
         } else {
-            ClientVoiceChat.Logger.Info("RNNoise library could not be loaded");
+            ClientVoiceChat.Logger.Error("RNNoise library could not be loaded");
         }
     }
     

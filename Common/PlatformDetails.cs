@@ -31,7 +31,7 @@ namespace HkmpVoiceChat.Common;
 /// <summary>
 /// Provides access to platform details.
 /// </summary>
-public class PlatformDetails {
+public static class PlatformDetails {
     static PlatformDetails() {
         if (Directory.Exists("/Applications")
             && Directory.Exists("/System")

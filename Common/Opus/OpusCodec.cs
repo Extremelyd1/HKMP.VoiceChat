@@ -3,10 +3,25 @@ using System.Collections.Generic;
 
 namespace HkmpVoiceChat.Common.Opus;
 
+/// <summary>
+/// Class for the Opus codec for encoding and decoding voice data.
+/// </summary>
 public class OpusCodec {
+    /// <summary>
+    /// Decoder instance.
+    /// </summary>
     private readonly OpusDecoder _decoder;
+    /// <summary>
+    /// Encoder instance.
+    /// </summary>
     private readonly OpusEncoder _encoder;
+    /// <summary>
+    /// Sample rate in Hertz of data for both the encoder and decoder.
+    /// </summary>
     private readonly int _sampleRate;
+    /// <summary>
+    /// Frame size in samples of data for both the encoder and decoder.
+    /// </summary>
     private readonly ushort _frameSize;
 
     /// <summary>
@@ -16,9 +31,9 @@ public class OpusCodec {
     /// <param name="channels">The sample channels (1 for mono, 2 for stereo).</param>
     /// <param name="frameSize">Size of the frame in samples.</param>
     public OpusCodec(
-        int sampleRate = Constants.DEFAULT_AUDIO_SAMPLE_RATE,
-        byte channels = Constants.DEFAULT_AUDIO_SAMPLE_CHANNELS,
-        ushort frameSize = Constants.DEFAULT_AUDIO_FRAME_SIZE
+        int sampleRate = Constants.DefaultAudioSampleRate,
+        byte channels = Constants.DefaultAudioSampleChannels,
+        ushort frameSize = Constants.DefaultAudioFrameSize
     ) {
         _sampleRate = sampleRate;
         _frameSize = frameSize;
@@ -26,6 +41,11 @@ public class OpusCodec {
         _encoder = new OpusEncoder(sampleRate, channels) { EnableForwardErrorCorrection = true };
     }
 
+    /// <summary>
+    /// Decode the given byte array of data.
+    /// </summary>
+    /// <param name="encodedData">Byte array containing encoded data.</param>
+    /// <returns>A byte array of the decoded data.</returns>
     public byte[] Decode(byte[] encodedData) {
         if (encodedData == null) {
             _decoder.Decode(null, 0, 0, new byte[_sampleRate / _frameSize], 0);
@@ -43,8 +63,11 @@ public class OpusCodec {
         return dst;
     }
 
-    public IEnumerable<int> PermittedEncodingFrameSizes => _encoder.PermittedFrameSizes;
-
+    /// <summary>
+    /// Encode the given byte array of data.
+    /// </summary>
+    /// <param name="data">Byte array containing raw data.</param>
+    /// <returns>A byte array of the encoded data.</returns>
     public byte[] Encode(byte[] data) {
         var samples = data.Length / sizeof(ushort);
         var numberOfBytes = _encoder.FrameSizeInBytes(samples);

@@ -2,14 +2,30 @@ using System;
 
 namespace HkmpVoiceChat.Common.WebRtcVad; 
 
+/// <summary>
+/// Class for the Web RTC VAD library for detecting voice in microphone input.
+/// </summary>
 public class WebRtcVad : IDisposable {
+    /// <summary>
+    /// Int pointer to the handle for the library.
+    /// </summary>
     private IntPtr _handle;
 
+    /// <summary>
+    /// Sample rate in Hertz of data.
+    /// </summary>
     private int _sampleRate;
+    /// <summary>
+    /// Frame size in samples of data.
+    /// </summary>
     private int _frameLength;
 
+    /// <summary>
+    /// The current operating mode.
+    /// </summary>
     private OperatingMode _mode;
 
+    /// <inheritdoc cref="_sampleRate" />
     public int SampleRate {
         get => _sampleRate;
         set {
@@ -21,6 +37,7 @@ public class WebRtcVad : IDisposable {
         }
     }
 
+    /// <inheritdoc cref="_frameLength" />
     public int FrameLength {
         get => _frameLength;
         set {
@@ -32,6 +49,7 @@ public class WebRtcVad : IDisposable {
         }
     }
 
+    /// <inheritdoc cref="_mode" />
     public OperatingMode OperatingMode {
         get => _mode;
         set {
@@ -57,10 +75,23 @@ public class WebRtcVad : IDisposable {
         }
     }
 
+    /// <summary>
+    /// Whether the given audio frame contains speech.
+    /// </summary>
+    /// <param name="audioFrame">An array of shorts containing microphone input data.</param>
+    /// <returns>True if the frame contains speech, otherwise false.</returns>
     public bool HasSpeech(short[] audioFrame) {
         return HasSpeech(audioFrame, _sampleRate, _frameLength);
     }
 
+    /// <summary>
+    /// Unsafe method for testing whether the given audio frame, with the given sample rate and frame length contains
+    /// speech.
+    /// </summary>
+    /// <param name="audioFrame">An array of shorts containing microphone input data.</param>
+    /// <param name="sampleRate">The sample rate of the data.</param>
+    /// <param name="frameLength">The frame length of the data.</param>
+    /// <returns></returns>
     private unsafe bool HasSpeech(short[] audioFrame, int sampleRate, int frameLength) {
         var samples = CalculateSamples(sampleRate, frameLength);
 
@@ -72,6 +103,11 @@ public class WebRtcVad : IDisposable {
         return result == 1;
     }
 
+    /// <summary>
+    /// Validate whether the sample rate and frame length are valid. Tests whether this library can work with the
+    /// given sample rate and frame length.
+    /// </summary>
+    /// <returns>True if the sample rate and frame length are valid, otherwise false.</returns>
     private bool ValidateRateAndFrameLength(int sampleRate, int frameLength) {
         var samples = CalculateSamples(sampleRate, frameLength);
         

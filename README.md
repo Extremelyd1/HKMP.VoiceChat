@@ -3,9 +3,9 @@ A mod and HKMP addon that implements voice chat between players.
 
 ## How it works
 HKMP Voice Chat works using a few libraries to facilitate voice chat:
-- OpenAL: To record and play audio positionally
-- Opus: Audio codec to efficiently encode audio for networking
-- RNNoise: Lightweight neural network that filters out noise from audio
+- [OpenAL](https://www.openal.org/): To record and play audio positionally
+- [Opus](https://opus-codec.org/): Audio codec to efficiently encode audio for networking
+- [RNNoise](https://jmvalin.ca/demo/rnnoise/): Lightweight neural network that filters out noise from audio
 
 HKMP Voice Chat uses the HKMP API to network audio data and the server addon takes care of delivering the audio to the
 correct clients based on the server configuration.
@@ -47,6 +47,14 @@ You can configure the voice chat with a few commands. For client configuration y
 - `/vcc device <list|set>` : List of set the used device for either microphone or speaker.
     - `/vcc device list <mics|speakers>` : Lists the available microphones or speakers that can be used with voice chat. The IDs given in the output can be used in the `/vcc device set ...` command.
     - `/vcc device set <mic|speaker> <value>` : Set the microphone or speaker to be used for voice chat. The value you should supply is one of the IDs from the `/vcc device list ...` command.
+- `/vcc set <setting name> [value]` : Get or set the value of a voice chat client setting. The following settings can be used (along with their function):
+    - `microphone_amplification` (aliases: `micvol`, `micvolume`, `micamp`): The amplification that should be applied to the microphone input.
+      Can be a decimal number.
+      Setting this is the same as executing `/vcc volume mic <value>`.
+    - `voice_chat_volume` (aliases: `speakervol`, `speakervolume`): The volume of the audio from other players.
+      Can be a decimal number.
+      Setting this is the same as executing `/vcc volume speaker <value>`.
+    - `smooth_channel_transition` (aliases: `smoothaudio`): Whether the transition of the audio from a player moving from the left to the right of the local player is smooth or abrupt.
 
 ### Server
 For the server configuration you can use the commands below. Please note that these commands require the sender to be authorized in order to execute them.

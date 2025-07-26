@@ -5,20 +5,39 @@ using OpenTK.Audio.OpenAL;
 
 namespace HkmpVoiceChat.Client.Voice;
 
+/// <summary>
+/// Microphone class that handles the microphone device through OpenAL.
+/// </summary>
 public class Microphone {
+    /// <summary>
+    /// The device name of the microphone device as listed by OpenAL.
+    /// </summary>
     private readonly string _deviceName;
 
+    /// <summary>
+    /// Integer pointer to the microphone device. Can be obtained from OpenAL and acts as a reference to pass back
+    /// to OpenAL methods.
+    /// </summary>
     private IntPtr _device;
-    private bool _started;
 
+    /// <summary>
+    /// Whether the device is opened.
+    /// </summary>
     public bool IsOpen => _device != IntPtr.Zero;
-    public bool IsStarted => _started;
+    /// <summary>
+    /// Whether capture has started on the device.
+    /// </summary>
+    public bool IsStarted { get; private set; }
 
     public Microphone(string deviceName) {
         _device = IntPtr.Zero;
         _deviceName = deviceName;
     }
 
+    /// <summary>
+    /// Open the microphone device.
+    /// </summary>
+    /// <exception cref="Exception">Thrown if the microphone is already open.</exception>
     public void Open() {
         if (IsOpen) {
             throw new Exception("Microphone already open");
@@ -27,32 +46,38 @@ public class Microphone {
         _device = OpenMic(_deviceName);
     }
 
+    /// <summary>
+    /// Start capturing the microphone input.
+    /// </summary>
     public void Start() {
         if (!IsOpen) {
             return;
         }
 
-        if (_started) {
+        if (IsStarted) {
             return;
         }
 
         Alc.CaptureStart(_device);
         SoundManager.CheckAlcError(_device, 0);
-        _started = true;
+        IsStarted = true;
     }
 
+    /// <summary>
+    /// Stop capturing the microphone input.
+    /// </summary>
     public void Stop() {
         if (!IsOpen) {
             return;
         }
 
-        if (!_started) {
+        if (!IsStarted) {
             return;
         }
 
         Alc.CaptureStop(_device);
         SoundManager.CheckAlcError(_device, 0);
-        _started = false;
+        IsStarted = false;
 
         var available = Available();
         var buff = new short[available];
@@ -62,12 +87,15 @@ public class Microphone {
             Alc.CaptureSamples(_device, handle.AddrOfPinnedObject(), buff.Length);
             SoundManager.CheckAlcError(_device, 1);
         } catch (Exception e) {
-            ClientVoiceChat.Logger.Debug($"Exception while capturing samples:\n{e}");
+            ClientVoiceChat.Logger.Error($"Exception while capturing samples:\n{e}");
         } finally {
             handle.Free();
         }
     }
 
+    /// <summary>
+    /// Close the microphone device.
+    /// </summary>
     public void Close() {
         if (!IsOpen) {
             return;
@@ -79,6 +107,10 @@ public class Microphone {
         _device = IntPtr.Zero;
     }
 
+    /// <summary>
+    /// Get the number of available capture samples from the microphone.
+    /// </summary>
+    /// <returns>The number of samples as an integer.</returns>
     public int Available() {
         Alc.GetInteger(_device, AlcGetInteger.CaptureSamples, 1, out var samples);
         SoundManager.CheckAlcError(_device, 0);
@@ -86,6 +118,12 @@ public class Microphone {
         return samples;
     }
 
+    /// <summary>
+    /// Read the captured microphone samples.
+    /// </summary>
+    /// <returns>A short array containing the samples.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the samples couldn't be read because there is not
+    /// enough samples available.</exception>
     public short[] Read() {
         var available = Available();
         if (available < SoundManager.BufferSize) {
@@ -100,7 +138,7 @@ public class Microphone {
             Alc.CaptureSamples(_device, handle.AddrOfPinnedObject(), buff.Length);
             SoundManager.CheckAlcError(_device, 0);
         } catch (Exception e) {
-            ClientVoiceChat.Logger.Debug($"Exception while capturing samples:\n{e}");
+            ClientVoiceChat.Logger.Error($"Exception while capturing samples:\n{e}");
         } finally {
             handle.Free();
         }
@@ -108,12 +146,19 @@ public class Microphone {
         return buff;
     }
 
+    /// <summary>
+    /// Open the microphone device with the given name.
+    /// </summary>
+    /// <param name="name">The name of the device as specified by OpenAL.</param>
+    /// <returns>An int pointer to the device.</returns>
+    /// <exception cref="Exception">Thrown when neither the device with the given name nor the default microphone
+    /// device could be opened.</exception>
     private IntPtr OpenMic(string name) {
         try {
             return TryOpenMic(name);
         } catch (Exception) {
             if (name != null) {
-                ClientVoiceChat.Logger.Debug($"Failed to open microphone '{name}', falling back to default microphone");
+                ClientVoiceChat.Logger.Error($"Failed to open microphone '{name}', falling back to default microphone");
             }
 
             try {
@@ -124,6 +169,13 @@ public class Microphone {
         }
     }
 
+    /// <summary>
+    /// Try to open the microphone device with the given name. Will throw an exception if the device could not be
+    /// opened.
+    /// </summary>
+    /// <param name="name">The name of the device as specified by OpenAL.</param>
+    /// <returns>An int pointer to the device.</returns>
+    /// <exception cref="Exception">Thrown when the device could not be opened.</exception>
     private IntPtr TryOpenMic(string name) {
         var device = Alc.CaptureOpenDevice(name, SoundManager.SampleRate, ALFormat.Mono16, SoundManager.BufferSize);
         if (device == IntPtr.Zero) {
@@ -134,6 +186,10 @@ public class Microphone {
         return device;
     }
 
+    /// <summary>
+    /// Get the name of the default microphone device from OpenAL.
+    /// </summary>
+    /// <returns>A string representing the default microphone device.</returns>
     public static string GetDefaultMicrophone() {
         var mic = Alc.GetString(IntPtr.Zero, AlcGetString.CaptureDefaultDeviceSpecifier);
         SoundManager.CheckAlcError(IntPtr.Zero, 0);
@@ -141,10 +197,14 @@ public class Microphone {
         return mic;
     }
 
+    /// <summary>
+    /// Get the names of all microphone devices from OpenAL.
+    /// </summary>
+    /// <returns>A list of strings for all the names of the microphone devices.</returns>
     public static List<string> GetAllMicrophones() {
         var devices = Alc.GetString(IntPtr.Zero, AlcGetStringList.CaptureDeviceSpecifier);
         SoundManager.CheckAlcError(IntPtr.Zero, 0);
 
-        return devices == null ? new List<string>() : new List<string>(devices);
+        return devices == null ? [] : [..devices];
     }
 }

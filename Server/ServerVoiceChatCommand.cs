@@ -1,23 +1,32 @@
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Hkmp.Api.Command;
 using Hkmp.Api.Command.Server;
+using HkmpVoiceChat.Common.Command;
 
 namespace HkmpVoiceChat.Server;
 
+/// <summary>
+/// Command for the server-side voice chat.
+/// </summary>
 public class ServerVoiceChatCommand : IServerCommand {
     /// <inheritdoc />
     public string Trigger => "/voicechatserver";
 
     /// <inheritdoc />
-    public string[] Aliases => new[] { "/vcs" };
+    public string[] Aliases => ["/vcs"];
 
     /// <inheritdoc />
     public bool AuthorizedOnly => true;
 
+    /// <summary>
+    /// The server settings instance for reading and modifying values.
+    /// </summary>
     private readonly ServerSettings _settings;
 
+    /// <summary>
+    /// Set of player IDs for players that are broadcasting their voice. This is a reference to the set from
+    /// <see cref="ServerVoiceChat"/>: <see cref="ServerVoiceChat._broadcasters"/>.
+    /// </summary>
     private readonly HashSet<ushort> _broadcasters;
 
     public ServerVoiceChatCommand(ServerSettings settings, HashSet<ushort> broadcasters) {
@@ -40,7 +49,7 @@ public class ServerVoiceChatCommand : IServerCommand {
         if (action == "set") {
             HandleSet(commandSender, args);
         } else if (action == "broadcast") {
-            HandleBroadcast(commandSender, args);
+            HandleBroadcast(commandSender);
         } else {
             SendUsage();
         }
@@ -53,84 +62,20 @@ public class ServerVoiceChatCommand : IServerCommand {
     /// <param name="args">A string array containing the arguments for this command. The first argument is
     /// the command trigger or alias.</param>
     private void HandleSet(ICommandSender commandSender, string[] args) {
-        if (args.Length < 3) {
-            commandSender.SendMessage($"Invalid usage: {Trigger} set [setting name]");
-            return;
-        }
-
-        var settingName = args[2];
-
-        var propertyInfos = typeof(ServerSettings).GetProperties();
-
-        PropertyInfo settingProperty = null;
-        foreach (var prop in propertyInfos) {
-            settingName = settingName.ToLower().Replace("_", "");
-            
-            // Check if the property equals the setting name given as argument ignoring capitalization
-            if (prop.Name.ToLower().Equals(settingName)) {
-                settingProperty = prop;
-                break;
-            }
-            
-            // Alternatively check for alias attribute and all aliases
-            var aliasAttribute = prop.GetCustomAttribute<SettingAliasAttribute>();
-            if (aliasAttribute != null) {
-                if (aliasAttribute.Aliases.Contains(settingName)) {
-                    settingProperty = prop;
-                    break;
-                }
-            }
-        }
-
-        if (settingProperty == null || !settingProperty.CanRead) {
-            commandSender.SendMessage($"Could not find setting with name: {settingName}");
-            return;
-        }
-
-        if (args.Length < 4) {
-            // User did not provide value to write setting, so we print the value
-            var currentValue = settingProperty.GetValue(_settings);
-
-            commandSender.SendMessage($"Setting '{settingName}' currently has value: {currentValue}");
-            return;
-        }
-
-        if (!settingProperty.CanWrite) {
-            commandSender.SendMessage($"Could not change value of setting with name: {settingName} (non-writable)");
-            return;
-        }
-
-        var newValueString = args[3];
-        object newValueObject;
-
-        if (settingProperty.PropertyType == typeof(int)) {
-            if (!int.TryParse(newValueString, out var newValueInt)) {
-                commandSender.SendMessage("Please provide an integer value for this setting");
-                return;
-            }
-
-            newValueObject = newValueInt;
-        } else if (settingProperty.PropertyType == typeof(bool)) {
-            if (!bool.TryParse(newValueString, out var newValueBool)) {
-                commandSender.SendMessage("Please provide a boolean value for this setting");
-                return;
-            }
-
-            newValueObject = newValueBool;
-        } else {
-            commandSender.SendMessage(
-                $"Could not change value of setting with name: {settingName} (unhandled type)");
-            return;
-        }
-
-        settingProperty.SetValue(_settings, newValueObject);
-
-        commandSender.SendMessage($"Changed setting '{settingName}' to: {newValueObject}");
-
-        _settings.SaveToFile();
+        CommandUtil.HandleSetCommand(
+            Trigger,
+            args,
+            _settings,
+            commandSender.SendMessage,
+            () => _settings.SaveToFile()
+        );
     }
 
-    private void HandleBroadcast(ICommandSender commandSender, string[] args) {
+    /// <summary>
+    /// Handle the broadcast sub-command.
+    /// </summary>
+    /// <param name="commandSender"></param>
+    private void HandleBroadcast(ICommandSender commandSender) {
         if (commandSender is not IPlayerCommandSender player) {
             commandSender.SendMessage("Cannot execute this command as a non-player");
             return;

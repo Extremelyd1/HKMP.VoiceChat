@@ -4,23 +4,46 @@ using System.Linq;
 using Hkmp.Api.Client;
 using Hkmp.Api.Command.Client;
 using HkmpVoiceChat.Client.Voice;
+using HkmpVoiceChat.Common.Command;
 
 namespace HkmpVoiceChat.Client;
 
+/// <summary>
+/// Command for the client-side voice chat.
+/// </summary>
 public class ClientVoiceChatCommand : IClientCommand {
     /// <inheritdoc />
     public string Trigger => "/voicechatclient";
 
     /// <inheritdoc />
-    public string[] Aliases => new[] { "/vcc" };
+    public string[] Aliases => ["/vcc"];
 
+    /// <summary>
+    /// Event that is called when the microphone is set. The parameter of the action is the device name of the
+    /// microphone.
+    /// </summary>
     public event Action<string> SetMicrophoneEvent;
+    /// <summary>
+    /// Event that is called when the speaker is set. The parameter of the action is the device name of the speaker.
+    /// </summary>
     public event Action<string> SetSpeakerEvent;
+    /// <summary>
+    /// Event that is called when the user toggles mute through this command.
+    /// </summary>
     public event Action ToggleMuteEvent;
 
+    /// <summary>
+    /// The chat box to post messages to from this command.
+    /// </summary>
     private readonly IChatBox _chatBox;
 
+    /// <summary>
+    /// Dictionary for mapping indices to microphone device names for setting the microphone.
+    /// </summary>
     private readonly Dictionary<int, string> _microphoneNames;
+    /// <summary>
+    /// Dictionary for mapping indices to speaker device names for setting the speaker.
+    /// </summary>
     private readonly Dictionary<int, string> _speakerNames;
 
     public ClientVoiceChatCommand(IChatBox chatBox) {
@@ -32,7 +55,7 @@ public class ClientVoiceChatCommand : IClientCommand {
     /// <inheritdoc />
     public void Execute(string[] args) {
         void SendUsage() {
-            _chatBox.AddMessage($"Invalid usage: {Trigger} <mute|volume|device>");
+            _chatBox.AddMessage($"Invalid usage: {Trigger} <mute|volume|device|set>");
         }
 
         if (args.Length < 2) {
@@ -42,20 +65,28 @@ public class ClientVoiceChatCommand : IClientCommand {
 
         var action = args[1];
         if (action == "mute") {
-            HandleMute(args);
+            HandleMute();
         } else if (action == "volume") {
             HandleVolume(args);
         } else if (action == "device") {
             HandleDevice(args);
+        } else if (action == "set") {
+            HandleSet(args);
         } else {
             SendUsage();
         }
     }
 
-    private void HandleMute(string[] args) {
+    /// <summary>
+    /// Handle the mute sub-command.
+    /// </summary>
+    private void HandleMute() {
         ToggleMuteEvent?.Invoke();
     }
 
+    /// <summary>
+    /// Handle the volume sub-command.
+    /// </summary>
     private void HandleVolume(string[] args) {
         void SendUsage() {
             _chatBox.AddMessage($"Invalid usage: {Trigger} volume <mic|speaker> <value>");
@@ -109,6 +140,9 @@ public class ClientVoiceChatCommand : IClientCommand {
         }
     }
 
+    /// <summary>
+    /// Handle the device sub-command.
+    /// </summary>
     private void HandleDevice(string[] args) {
         void SendUsage() {
             _chatBox.AddMessage($"Invalid usage: {Trigger} device <list|set>");
@@ -127,6 +161,9 @@ public class ClientVoiceChatCommand : IClientCommand {
         }
     }
 
+    /// <summary>
+    /// Handle the device list sub-command.
+    /// </summary>
     private void HandleDeviceList(string[] args) {
         void SendUsage() {
             _chatBox.AddMessage($"Invalid usage: {Trigger} device list <mics|speakers>");
@@ -157,7 +194,7 @@ public class ClientVoiceChatCommand : IClientCommand {
                 _microphoneNames[index++] = mic;
             }
         } else if (type is "speakers" or "speaker") {
-            var speakers = SoundManager.GetAllSpeakers();
+            var speakers = SoundManager.GetAllDeviceSpeakers();
             if (speakers.Count == 0) {
                 _chatBox.AddMessage("No speakers could be found");
                 return;
@@ -179,7 +216,10 @@ public class ClientVoiceChatCommand : IClientCommand {
         }
     }
 
-    void HandleDeviceSet(string[] args) {
+    /// <summary>
+    /// Handle the device set sub-command.
+    /// </summary>
+    private void HandleDeviceSet(string[] args) {
         void SendUsage() {
             _chatBox.AddMessage($"Invalid usage: {Trigger} device set <mic|speaker> <value>");
         }
@@ -238,5 +278,19 @@ public class ClientVoiceChatCommand : IClientCommand {
         } else {
             SendUsage();
         }
+    }
+
+    /// <summary>
+    /// Handle the set sub-command.
+    /// </summary>
+    private void HandleSet(string[] args) {
+        CommandUtil.HandleSetCommand(
+            Trigger,
+            args,
+            VoiceChatMod.ModSettings,
+            _chatBox.AddMessage,
+            null,
+            true
+        );
     }
 }

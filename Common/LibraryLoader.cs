@@ -29,11 +29,10 @@ using System.Runtime.InteropServices;
 namespace HkmpVoiceChat.Common;
 
 /// <summary>
-/// Library loader.
+/// Library loader for loading libraries to access the native methods. 
 /// </summary>
-//internal class LibraryLoader
-public class LibraryLoader {
-    private static readonly System.Collections.Generic.List<IntPtr> libraries = new();
+public static class LibraryLoader {
+    private static readonly System.Collections.Generic.List<IntPtr> Libraries = [];
 
     [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Ansi)]
     private static extern IntPtr LoadLibrary(string lpFileName);
@@ -54,7 +53,7 @@ public class LibraryLoader {
     static extern IntPtr dlsym(IntPtr handle, string symbol);
 
     public static void UnloadAll() {
-        foreach (var ptr in libraries)
+        foreach (var ptr in Libraries)
             Free(ptr);
     }
 
@@ -65,7 +64,7 @@ public class LibraryLoader {
     /// <returns></returns>
     internal static IntPtr Load(string fileName) {
         var lib = PlatformDetails.IsWindows ? LoadLibrary(fileName) : dlopen(fileName, 1);
-        libraries.Add(lib);
+        Libraries.Add(lib);
 
         return lib;
     }

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using Hkmp.Game.Settings;
 using Newtonsoft.Json;
 
 namespace HkmpVoiceChat.Server;
@@ -51,7 +52,7 @@ public class ServerSettings {
         try {
             File.WriteAllText(filePath, settingsJson);
         } catch (Exception e) {
-            ServerVoiceChat.Logger.Debug($"Could not write server settings to file:\n{e}");
+            ServerVoiceChat.Logger.Error($"Could not write server settings to file:\n{e}");
         }
     }
 
@@ -77,7 +78,7 @@ public class ServerSettings {
             var settings = JsonConvert.DeserializeObject<ServerSettings>(fileContents);
             return settings ?? new ServerSettings();
         } catch (Exception e) {
-            ServerVoiceChat.Logger.Debug($"Could not load server settings from file:\n{e}");
+            ServerVoiceChat.Logger.Error($"Could not load server settings from file:\n{e}");
             return new ServerSettings();
         }
     }

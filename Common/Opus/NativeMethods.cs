@@ -27,6 +27,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using HkmpVoiceChat.Client;
 
 namespace HkmpVoiceChat.Common.Opus;
 
@@ -34,13 +35,22 @@ namespace HkmpVoiceChat.Common.Opus;
 /// Wraps the Opus API.
 /// </summary>
 internal class NativeMethods {
+    /// <summary>
+    /// Static constructor for loading native assemblies based on the used operating system.
+    /// </summary>
     static NativeMethods() {
         IntPtr image;
+        var executingAssemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        if (executingAssemblyPath == null) {
+            ClientVoiceChat.Logger.Error("Could not get path of executing assembly, cannot initialize NativeMethods for Opus");
+            return;
+        }
+        
         if (PlatformDetails.IsMac) {
             image = LibraryLoader.Load("libopus.dylib");
             if (image.Equals(IntPtr.Zero)) {
                 image = LibraryLoader.Load(Path.Combine(
-                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                    executingAssemblyPath,
                     "Natives",
                     "Mac",
                     "libopus.dylib"
@@ -50,7 +60,7 @@ internal class NativeMethods {
             image = LibraryLoader.Load("opus.dll");
             if (image.Equals(IntPtr.Zero)) {
                 image = LibraryLoader.Load(Path.Combine(
-                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                    executingAssemblyPath,
                     "Natives",
                     "Windows",
                     "opus.dll"
@@ -60,7 +70,7 @@ internal class NativeMethods {
             image = LibraryLoader.Load("libopus.so.0");
             if (image.Equals(IntPtr.Zero)) {
                 image = LibraryLoader.Load(Path.Combine(
-                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                    executingAssemblyPath,
                     "Natives",
                     "Linux",
                     "libopus.so.0"

@@ -2,13 +2,25 @@ using System;
 
 namespace HkmpVoiceChat.Common.RNNoise; 
 
+/// <summary>
+/// The RNNoise class for processing voice data to reduce noise.
+/// </summary>
+// ReSharper disable once InconsistentNaming
 public class RNNoise : IDisposable {
+    /// <summary>
+    /// Int pointer to the handle for the library.
+    /// </summary>
     private IntPtr _handle;
 
     public RNNoise() {
         _handle = NativeMethods.rnnoise_create(IntPtr.Zero);
     }
 
+    /// <summary>
+    /// Process a frame of data and reduce the noise in that frame.
+    /// </summary>
+    /// <param name="data">An array of shorts with the raw data.</param>
+    /// <returns>An array of shorts with data where the noise is reduced.</returns>
     public short[] ProcessFrame(short[] data) {
         var frameSize = NativeMethods.rnnoise_get_frame_size();
         
@@ -47,8 +59,8 @@ public class RNNoise : IDisposable {
             }
         }
 
-        const float FloatShortScale = short.MaxValue - 1; 
-        var scale = Math.Min(1f, FloatShortScale / Math.Max(Math.Abs(max), Math.Abs(min)));
+        const float floatShortScale = short.MaxValue - 1; 
+        var scale = Math.Min(1f, floatShortScale / Math.Max(Math.Abs(max), Math.Abs(min)));
 
         var processedShortData = new short[processedFloatData.Length];
         for (var i = 0; i < processedFloatData.Length; i++) {

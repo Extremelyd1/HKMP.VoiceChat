@@ -2,29 +2,42 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using HkmpVoiceChat.Client;
 
 namespace HkmpVoiceChat.Common.WebRtcVad;
 
+/// <summary>
+/// Wraps the Web RTC VAD library.
+/// </summary>
 public class NativeMethods {
+    /// <summary>
+    /// Static constructor for loading native assemblies based on the used operating system.
+    /// </summary>
     static NativeMethods() {
         IntPtr image;
+        var executingAssemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        if (executingAssemblyPath == null) {
+            ClientVoiceChat.Logger.Error("Could not get path of executing assembly, cannot initialize NativeMethods for Web RTC VAD");
+            return;
+        }
+        
         if (PlatformDetails.IsMac) {
             image = LibraryLoader.Load(Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                executingAssemblyPath,
                 "Natives",
                 "Mac",
                 "libwebrtcvad.dylib"
             ));
         } else if (PlatformDetails.IsWindows) {
             image = LibraryLoader.Load(Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                executingAssemblyPath,
                 "Natives",
                 "Windows",
                 "webrtcvad.dll"
             ));
         } else {
             image = LibraryLoader.Load(Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                executingAssemblyPath,
                 "Natives",
                 "Linux",
                 "libwebrtcvad.so"
