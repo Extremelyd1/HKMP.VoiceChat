@@ -7,6 +7,7 @@
         <TargetFramework>net472</TargetFramework>
         <LangVersion>latest</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
     </PropertyGroup>
 
     <ItemGroup>
@@ -31,7 +32,7 @@
             <Private>False</Private>
         </Reference>
         <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>..\lib\Newtonsoft.Json.dll</HintPath>
+            <HintPath>$(References)\Newtonsoft.Json.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <PackageReference Include="OpenTK" Version="3.3.3" />
