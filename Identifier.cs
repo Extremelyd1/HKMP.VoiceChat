@@ -5,5 +5,5 @@ namespace HkmpVoiceChat;
 /// </summary>
 public static class Identifier {
     public const string AddonName = "ProximityChat";
-    public const string AddonVersion = "0.1.0";
+    public const string AddonVersion = "0.2.0";
 }
