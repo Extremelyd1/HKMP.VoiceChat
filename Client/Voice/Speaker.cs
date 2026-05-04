@@ -161,7 +161,7 @@ public class Speaker {
             var x = soundPos.X;
             var y = soundPos.Y;
             var z = soundPos.Z;
-            if (VoiceChatMod.ModSettings.SmoothChannelTransition && x is < 5f or > -5f) {
+            if (VoiceChatMod.ModSettings.SmoothChannelTransition && x is < 5f and > -5f) {
                 z = (float) -Math.Sqrt(25f - Math.Pow(x, 2));
             }
 
